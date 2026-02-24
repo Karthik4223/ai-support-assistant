@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const routes = require('./routes');
 const { initializeDb } = require('./db');
 const chatRateLimiter = require('./middleware/rateLimiter');
@@ -17,6 +18,14 @@ app.use('/api/chat', chatRateLimiter);
 
 // Routes
 app.use('/api', routes);
+
+// Serve static files from the React app
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../frontend/dist')));
+    app.get('*path', (req, res) => {
+        res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+    });
+}
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

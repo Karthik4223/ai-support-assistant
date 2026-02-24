@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  flash-man:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - flash-man-data:/app/data
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL}
+      - LLM_MODEL=${LLM_MODEL}
+    restart: always
+
+volumes:
+  flash-man-data:
