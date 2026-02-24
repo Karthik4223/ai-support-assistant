@@ -1,0 +1,18 @@
+[
+  {
+    "title": "Reset Password",
+    "content": "Users can reset password from Settings > Security. You will need to verify your current password or use your registered email for a recovery link."
+  },
+  {
+    "title": "Refund Policy",
+    "content": "Refunds are allowed within 7 days of purchase. The item must be in its original condition. To initiate a refund, please contact support at support@example.com."
+  },
+  {
+    "title": "Contact Support",
+    "content": "Our support team is available 24/7 via email at support@example.com or through the live chat widget on our website."
+  },
+  {
+    "title": "Subscription Plans",
+    "content": "We offer three plans: Basic ($9/mo), Pro ($29/mo), and Enterprise (Contact us). Basic includes standard features, while Pro adds advanced analytics and priority support."
+  }
+]
