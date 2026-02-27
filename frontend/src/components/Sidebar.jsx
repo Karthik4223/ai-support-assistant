@@ -85,6 +85,13 @@ const Sidebar = ({ onSelectSession, activeSessionId, onNewChat, mode, setMode })
                                 Docs Specialist
                                 {mode === 'docs' && <div style={{ width: '8px', height: '8px', background: 'white', borderRadius: '50%' }} />}
                             </button>
+                            <button
+                                onClick={() => { setMode('prescription'); setShowSettings(false); }}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '10px', background: mode === 'prescription' ? 'var(--primary)' : 'rgba(255,255,255,0.05)', color: 'white', fontSize: '0.8rem', fontWeight: 700, textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                            >
+                                Prescription Extractor
+                                {mode === 'prescription' && <div style={{ width: '8px', height: '8px', background: 'white', borderRadius: '50%' }} />}
+                            </button>
                         </div>
                     </div>
                 )}
@@ -96,7 +103,9 @@ const Sidebar = ({ onSelectSession, activeSessionId, onNewChat, mode, setMode })
                         </div>
                         <div>
                             <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'white' }}>Super Admin</p>
-                            <p style={{ fontSize: '0.65rem', color: mode === 'docs' ? '#60a5fa' : 'var(--accent)', fontWeight: 800 }}>{mode === 'docs' ? 'DOCS MODE' : 'GENERAL MODE'}</p>
+                            <p style={{ fontSize: '0.65rem', color: mode === 'docs' ? '#60a5fa' : (mode === 'prescription' ? '#10b981' : 'var(--accent)'), fontWeight: 800 }}>
+                                {mode === 'docs' ? 'DOCS MODE' : (mode === 'prescription' ? 'PRESCRIPTION MODE' : 'GENERAL MODE')}
+                            </p>
                         </div>
                     </div>
                     <button

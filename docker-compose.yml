@@ -11,6 +11,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL}
       - LLM_MODEL=${LLM_MODEL}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
     restart: always
 
 volumes:

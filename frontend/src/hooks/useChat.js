@@ -39,12 +39,12 @@ export const useChat = () => {
         }
     };
 
-    const sendMessage = async (text) => {
-        if (!text.trim()) return;
+    const sendMessage = async (text, image = null) => {
+        if (!text.trim() && !image) return;
 
         const userMessage = {
             role: 'user',
-            content: text,
+            content: text || (image ? '[Image Attachment]' : ''),
             created_at: new Date().toISOString()
         };
 
@@ -53,7 +53,7 @@ export const useChat = () => {
         setError(null);
 
         try {
-            const data = await chatService.sendMessage(sessionId, text, mode);
+            const data = await chatService.sendMessage(sessionId, text, mode, image);
             const assistantMessage = {
                 role: 'assistant',
                 content: data.reply,

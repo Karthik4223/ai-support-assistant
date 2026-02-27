@@ -3,23 +3,27 @@ const llmService = require('../services/llmService');
 
 class ChatController {
     async chat(req, res) {
-        const { sessionId, message, mode = 'general' } = req.body;
+        const { sessionId, message, mode = 'general', image = null } = req.body;
 
-        if (!sessionId || !message) {
-            return res.status(400).json({ error: 'Missing sessionId or message' });
+        if (!sessionId || (!message && !image)) {
+            return res.status(400).json({ error: 'Missing sessionId, message or image' });
         }
 
         try {
             // 1. Create session if not exists
             await dbService.createSessionIfNotExists(sessionId);
 
-            // 2. Save user message
-            await dbService.saveMessage(sessionId, 'user', message);
+            // 2. Save user message (if there is text)
+            if (message) {
+                await dbService.saveMessage(sessionId, 'user', message);
+            } else if (image) {
+                await dbService.saveMessage(sessionId, 'user', '[Image Attachment]');
+            }
 
             // 3. Generate title if it's the first message
             const session = await dbService.getSession(sessionId);
             if (!session.title || session.title === 'New Conversation') {
-                const title = await llmService.generateTitle(message);
+                const title = message ? await llmService.generateTitle(message) : 'Prescription Scan';
                 await dbService.updateSessionTitle(sessionId, title);
             }
 
@@ -30,7 +34,7 @@ class ChatController {
             const globalHistory = await dbService.getGlobalHistory(20);
 
             // 6. Get LLM response
-            const { reply, tokensUsed } = await llmService.getChatResponse(sessionId, message, history, mode, globalHistory);
+            const { reply, tokensUsed } = await llmService.getChatResponse(sessionId, message, history, mode, globalHistory, image);
 
             // 7. Save assistant response
             await dbService.saveMessage(sessionId, 'assistant', reply);
@@ -39,6 +43,8 @@ class ChatController {
             await dbService.updateSessionTimestamp(sessionId);
 
             res.json({ reply, tokensUsed });
+            console.log("reply", reply);
+            console.log("tokensUsed", tokensUsed);
         } catch (err) {
             console.error('Chat error:', err);
             res.status(500).json({ error: err.message || 'Internal server error' });

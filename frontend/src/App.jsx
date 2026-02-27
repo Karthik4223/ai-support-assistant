@@ -39,6 +39,7 @@ function App() {
           messages={messages}
           loading={loading}
           onSendMessage={sendMessage}
+          mode={mode}
         />
       </main>
     </div>

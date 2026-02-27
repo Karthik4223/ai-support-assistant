@@ -12,8 +12,8 @@ const api = axios.create({
 });
 
 export const chatService = {
-    async sendMessage(sessionId, message, mode = 'general') {
-        const response = await api.post('/chat', { sessionId, message, mode });
+    async sendMessage(sessionId, message, mode = 'general', image = null) {
+        const response = await api.post('/chat', { sessionId, message, mode, image });
         return response.data;
     },
 
