@@ -102,8 +102,8 @@ const Sidebar = ({ onSelectSession, activeSessionId, onNewChat, mode, setMode })
                             <User size={20} className="text-slate-400" />
                         </div>
                         <div>
-                            <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'white' }}>Super Admin</p>
-                            <p style={{ fontSize: '0.65rem', color: mode === 'docs' ? '#60a5fa' : (mode === 'prescription' ? '#10b981' : 'var(--accent)'), fontWeight: 800 }}>
+                            <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'white' }}>Karthik Malasani</p>
+                            <p style={{ fontSize: '0.65rem', color: mode === 'prescription' ? '#10b981' : 'var(--accent)', fontWeight: 800 }}>
                                 {mode === 'docs' ? 'DOCS MODE' : (mode === 'prescription' ? 'PRESCRIPTION MODE' : 'GENERAL MODE')}
                             </p>
                         </div>

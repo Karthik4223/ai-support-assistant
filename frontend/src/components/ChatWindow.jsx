@@ -68,7 +68,7 @@ const ChatWindow = ({ messages, loading, onSendMessage, mode }) => {
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <div style={{ padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-dim)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Sparkles size={12} className={isPrescriptionMode ? 'text-emerald-400' : 'text-indigo-400'} />
-                        {isPrescriptionMode ? 'Gemini 1.5 Flash' : 'Flash Man v1.0'}
+                        {isPrescriptionMode ? 'Gemini' : 'Flash Man v1.0'}
                     </div>
                 </div>
             </div>
@@ -174,9 +174,14 @@ const ChatWindow = ({ messages, loading, onSendMessage, mode }) => {
                         {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
                     </button>
                 </form>
-                <p style={{ textAlign: 'center', fontSize: '0.65rem', color: 'var(--text-dim)', marginTop: '1rem', fontWeight: 700, opacity: 0.6, letterSpacing: '0.05em' }}>
-                    {isPrescriptionMode ? 'AI MEDICAL DATA EXTRACTION POWERED BY GEMINI' : 'FLASH MAN • YOUR PERSONAL ASSISTANT'}
-                </p>
+                <div style={{ textAlign: 'center', marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <p style={{ fontSize: '0.65rem', color: 'var(--text-dim)', fontWeight: 700, opacity: 0.6, letterSpacing: '0.05em', margin: 0 }}>
+                        {isPrescriptionMode ? 'AI MEDICAL DATA EXTRACTION POWERED BY GEMINI' : 'FLASH MAN • YOUR PERSONAL ASSISTANT'}
+                    </p>
+                    <p style={{ fontSize: '0.6rem', color: 'var(--accent)', fontWeight: 800, opacity: 0.8, letterSpacing: '0.1em' }}>
+                        BY KARTHIK MALASANI • karthikmalasani21@gmail.com
+                    </p>
+                </div>
             </div>
         </div>
     );
