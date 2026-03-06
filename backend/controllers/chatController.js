@@ -3,7 +3,7 @@ const llmService = require('../services/llmService');
 
 class ChatController {
     async chat(req, res) {
-        const { sessionId, message, mode = 'general', image = null } = req.body;
+        const { sessionId, message, mode = 'general', image = null, customApiKey = null } = req.body;
 
         if (!sessionId || (!message && !image)) {
             return res.status(400).json({ error: 'Missing sessionId, message or image' });
@@ -13,11 +13,10 @@ class ChatController {
             // 1. Create session if not exists
             await dbService.createSessionIfNotExists(sessionId);
 
-            // 2. Save user message (if there is text)
-            if (message) {
-                await dbService.saveMessage(sessionId, 'user', message);
-            } else if (image) {
-                await dbService.saveMessage(sessionId, 'user', '[Image Attachment]');
+            // 2. Save user message (if there is text or image)
+            if (message || image) {
+                const messageText = message || '[Image Attachment]';
+                await dbService.saveMessage(sessionId, 'user', messageText, image);
             }
 
             // 3. Generate title if it's the first message
@@ -34,7 +33,7 @@ class ChatController {
             const globalHistory = await dbService.getGlobalHistory(20);
 
             // 6. Get LLM response
-            const { reply, tokensUsed } = await llmService.getChatResponse(sessionId, message, history, mode, globalHistory, image);
+            const { reply, tokensUsed } = await llmService.getChatResponse(sessionId, message, history, mode, globalHistory, image, customApiKey);
 
             // 7. Save assistant response
             await dbService.saveMessage(sessionId, 'assistant', reply);
@@ -74,6 +73,41 @@ class ChatController {
         } catch (err) {
             console.error('Get sessions error:', err);
             res.status(500).json({ error: 'Failed to fetch sessions' });
+        }
+    }
+
+    async getApiKeys(req, res) {
+        try {
+            const keys = await dbService.getAllApiKeys();
+            res.json(keys);
+        } catch (err) {
+            console.error('Get API keys error:', err);
+            res.status(500).json({ error: 'Failed to fetch API keys' });
+        }
+    }
+
+    async saveApiKey(req, res) {
+        const { name, key } = req.body;
+        if (!name || !key) {
+            return res.status(400).json({ error: 'Missing name or key' });
+        }
+        try {
+            const id = await dbService.saveApiKey(name, key);
+            res.json({ id, name });
+        } catch (err) {
+            console.error('Save API key error:', err);
+            res.status(500).json({ error: 'Failed to save API key' });
+        }
+    }
+
+    async deleteApiKey(req, res) {
+        const { id } = req.params;
+        try {
+            await dbService.deleteApiKey(id);
+            res.json({ success: true });
+        } catch (err) {
+            console.error('Delete API key error:', err);
+            res.status(500).json({ error: 'Failed to delete API key' });
         }
     }
 }

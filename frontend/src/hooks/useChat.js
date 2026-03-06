@@ -12,6 +12,21 @@ export const useChat = () => {
         return localStorage.getItem('chatMode') || 'general';
     });
     const [error, setError] = useState(null);
+    const [apiKeys, setApiKeys] = useState([]);
+    const [selectedApiKey, setSelectedApiKey] = useState(null);
+
+    useEffect(() => {
+        loadApiKeys();
+    }, []);
+
+    const loadApiKeys = async () => {
+        try {
+            const keys = await chatService.getApiKeys();
+            setApiKeys(keys);
+        } catch (err) {
+            console.error('Failed to load API keys', err);
+        }
+    };
 
     useEffect(() => {
         localStorage.setItem('sessionId', sessionId);
@@ -39,12 +54,13 @@ export const useChat = () => {
         }
     };
 
-    const sendMessage = async (text, image = null) => {
+    const sendMessage = async (text, image = null, customApiKey = null) => {
         if (!text.trim() && !image) return;
 
         const userMessage = {
             role: 'user',
-            content: text || (image ? '[Image Attachment]' : ''),
+            content: text || '[Image Attachment]',
+            image: image,
             created_at: new Date().toISOString()
         };
 
@@ -53,7 +69,7 @@ export const useChat = () => {
         setError(null);
 
         try {
-            const data = await chatService.sendMessage(sessionId, text, mode, image);
+            const data = await chatService.sendMessage(sessionId, text, mode, image, customApiKey);
             const assistantMessage = {
                 role: 'assistant',
                 content: data.reply,
@@ -75,6 +91,16 @@ export const useChat = () => {
         localStorage.setItem('sessionId', newId);
     }, []);
 
+    const addApiKey = async (name, key) => {
+        try {
+            await chatService.saveApiKey(name, key);
+            await loadApiKeys();
+        } catch (err) {
+            console.error('Failed to save API key', err);
+            throw err;
+        }
+    };
+
     return {
         sessionId,
         messages,
@@ -84,6 +110,10 @@ export const useChat = () => {
         setMode,
         sendMessage,
         startNewChat,
-        setSessionId
+        setSessionId,
+        apiKeys,
+        selectedApiKey,
+        setSelectedApiKey,
+        addApiKey
     };
 };

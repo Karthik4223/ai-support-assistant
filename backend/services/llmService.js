@@ -27,9 +27,9 @@ class LLMService {
         }
     }
 
-    async getChatResponse(sessionId, userMessage, history, mode = 'general', globalHistory = [], image = null) {
+    async getChatResponse(sessionId, userMessage, history, mode = 'general', globalHistory = [], image = null, customApiKey = null) {
         if (mode === 'prescription') {
-            return this.getPrescriptionExtraction(userMessage, image);
+            return this.getPrescriptionExtraction(userMessage, image, customApiKey);
         }
 
         const docs = this.loadDocs();
@@ -81,36 +81,274 @@ Instructions:
         }
     }
 
-    async getPrescriptionExtraction(message, imageBase64) {
-        if (!process.env.GOOGLE_API_KEY) {
+    async getPrescriptionExtraction(message, imageBase64, customApiKey = null) {
+        let genAI = this.genAI;
+        if (customApiKey) {
+            genAI = new GoogleGenerativeAI(customApiKey);
+        } else if (!process.env.GOOGLE_API_KEY) {
             throw new Error('GOOGLE_API_KEY_MISSING');
         }
 
-        if (!this.genAI) {
-            this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+        if (!genAI) {
+            genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
         }
 
         try {
             const model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-            const prompt = `Act as a professional medical data extractor. Scan the attached prescription image and extract the information into a structured JSON format. If the handwriting is difficult to read, use medical context to provide the most likely drug name.
+            // If message is provided when image is uploaded, it's a custom prompt override
+            const prompt = (imageBase64 && message) ? message : `### SYSTEM ROLE
 
-Extract the following fields:
-Patient: Name, Age, and Gender.
-Doctor: Name, Specialization, and Clinic/Hospital name.
-Medications: Create a list including Drug Name, Strength (e.g., 500mg), Dosage (e.g., 1 tablet), Frequency (e.g., twice daily), and Duration (e.g., 5 days).
-Diagnosis: Any mentioned symptoms or conditions.
-Date: The date the prescription was written.
+You are a **Senior Clinical Pharmacist specializing in Indian prescription digitisation and medication safety**.
 
-Output ONLY the JSON code block.`;
+Your task is to **extract medication data from prescription images with the highest possible accuracy**.
+
+Patient safety is critical. You must **never guess, invent, or infer medication names**.
+
+Your job is **data extraction only**, not medical interpretation.
+
+Return **only structured JSON output**.
+
+---
+
+# PRIMARY OBJECTIVE
+
+Extract **all medications exactly as written in the prescription**.
+
+Medication extraction is **mandatory**.
+
+All other fields are **optional**.
+
+---
+
+# EXTRACTION STRATEGY
+
+You must internally follow this **4-step extraction pipeline**.
+
+---
+
+## STEP 1 — RAW TEXT CAPTURE
+
+Identify the portion of the prescription that contains medications.
+
+Capture the **exact visible medication text lines** without interpretation.
+
+Example:
+
+Tab Amlod 5   1-0-1
+Cap Becosules 1 od
+Syp Crocin 5ml sos
+
+Preserve the exact wording as 
+"Raw_Text".
+
+---
+
+## STEP 2 — STRUCTURED PARSING
+
+Convert each medication line into structured fields.
+
+Extract the following fields **only if visible**:
+
+Drug_Name
+Strength
+Dosage
+Route
+Frequency
+Duration
+
+If information is missing, return an empty string "".
+
+Never fabricate data.
+
+---
+
+## STEP 3 — DRUG NAME VALIDATION
+
+Validate drug names using known Indian pharmaceutical references such as:
+
+CIMS India
+MedIndia
+Indian Drug Index
+
+Rules:
+
+• If drug name is **fully legible and matches known drug database**
+→ Needs_Verification = false
+
+• If drug name is **partially legible or uncertain**
+→ append "(VERIFY)"
+
+Example:
+
+Drug_Name: "Amlodipine (VERIFY)"
+
+• If the visible text cannot be matched to any drug
+→ mark Needs_Verification = true
+
+Never expand incomplete words unless fully readable.
+
+Example:
+
+Visible text:
+
+Amlod...
+
+Return:
+
+Drug_Name: "Amlod..."
+Needs_Verification: true
+
+Do NOT convert to Amlodipine.
+
+---
+
+## STEP 4 — SELF VERIFICATION PASS
+
+Perform a second internal review before producing the final output.
+
+Verify:
+
+• No drug names were guessed
+• Every medication includes Raw_Text
+• No missing fields were invented
+• Strength units appear realistic
+• Duplicate medications are flagged
+
+If any issue exists, mark "Conflict_Flag": true.
+
+---
+
+# MEDICATION SHORTHAND STANDARDIZATION
+
+Convert common prescription shorthand:
+
+1-0-1 → Twice daily (Morning & Night)
+1-1-1 → Three times daily
+1-0-0 → Once daily (Morning)
+0-0-1 → Once daily (Night)
+1 od / qd → Once daily
+bd → Twice daily
+tid → Three times daily
+sos → As needed
+pc → After food
+ac → Before food
+
+---
+
+# DOSAGE FORM NORMALIZATION
+
+Tab → Tablet
+Cap → Capsule
+Syr → Syrup
+Inj → Injection
+Drops → Drops
+Oint → Ointment
+Cream → Cream
+
+---
+
+# IMAGE LEGIBILITY SAFETY CHECK
+
+If **no medication name can be identified with ≥90% confidence**, return:
+
+{
+"error": "Medication names are illegible. Please provide a clearer image."
+}
+
+---
+
+# PARTIAL DATA RULE
+
+If any field cannot be determined:
+
+"Strength": ""
+
+Do not guess values.
+
+---
+
+# CONFIDENCE SCORING
+
+Confidence values should reflect handwriting clarity.
+
+Guidelines:
+
+95-100 → printed or very clear
+80-94 → readable handwriting
+60-79 → partially unclear
+below 60 → highly uncertain
+
+---
+
+# OUTPUT JSON FORMAT
+
+Return the output strictly using the following JSON structure:
+
+{
+"Patient": {
+"Name": "",
+"Age": "",
+"Gender": ""
+},
+
+"Doctor": {
+"Name": "",
+"Specialization": "",
+"Clinic_Hospital_Name": ""
+},
+
+"Medications": [
+{
+"Drug_Name": "",
+"Strength": "",
+"Dosage": "",
+"Route": "",
+"Frequency": "",
+"Duration": "",
+"Raw_Text": "",
+"Needs_Verification": false,
+"Confidence": "0-100"
+}
+],
+
+"Diagnosis": [],
+"Date": "",
+
+"Extraction_Metadata": {
+"Total_Medications_Extracted": 0,
+"Verification_Required_Count": 0,
+"Conflict_Flag": false
+},
+
+"Extraction_Confidence": "0-100",
+"error": null
+}
+
+---
+
+# FINAL VALIDATION CHECKLIST
+
+Before returning the output verify:
+
+1. Every medication has Raw_Text.
+2. No medication name was guessed.
+3. Uncertain drugs contain "(VERIFY)".
+4. Missing values are empty strings "".
+5. JSON structure matches exactly.
+6. Output contains **only JSON**.
+
+Return the final structured JSON.`;
 
             const parts = [{ text: prompt }];
 
             if (imageBase64) {
-                const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+                const mimeTypeMatch = imageBase64.match(/^data:([^;]+);base64,/);
+                const mimeType = mimeTypeMatch ? mimeTypeMatch[1] : "image/jpeg";
+                const base64Data = imageBase64.replace(/^data:[^;]+;base64,/, "");
                 parts.push({
                     inlineData: {
-                        mimeType: "image/jpeg",
+                        mimeType: mimeType,
                         data: base64Data
                     }
                 });
@@ -118,7 +356,8 @@ Output ONLY the JSON code block.`;
                 parts.push({ text: `User message: ${message}` });
             }
 
-            const result = await model.generateContent(parts);
+            const genModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const result = await genModel.generateContent(parts);
             const response = await result.response;
             const text = response.text();
 
@@ -128,7 +367,7 @@ Output ONLY the JSON code block.`;
             };
         } catch (err) {
             console.error('Gemini API Error:', err);
-            throw new Error('Failed to extract medical data: ' + err.message);
+            throw new Error("Error try later or tokens limit exceeded");
         }
     }
 

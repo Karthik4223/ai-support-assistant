@@ -14,7 +14,11 @@ function App() {
     setMode,
     sendMessage,
     startNewChat,
-    setSessionId
+    setSessionId,
+    apiKeys,
+    selectedApiKey,
+    setSelectedApiKey,
+    addApiKey
   } = useChat();
 
   return (
@@ -40,6 +44,10 @@ function App() {
           loading={loading}
           onSendMessage={sendMessage}
           mode={mode}
+          apiKeys={apiKeys}
+          selectedApiKey={selectedApiKey}
+          setSelectedApiKey={setSelectedApiKey}
+          addApiKey={addApiKey}
         />
       </main>
     </div>

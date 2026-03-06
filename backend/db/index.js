@@ -33,8 +33,39 @@ const initializeDb = () => {
           session_id TEXT NOT NULL,
           role TEXT CHECK(role IN ('user','assistant')),
           content TEXT NOT NULL,
+          image TEXT, -- Added image column
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (session_id) REFERENCES sessions (id)
+        )
+      `, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          // Check if image column exists, if not add it
+          db.all("PRAGMA table_info(messages)", (err, rows) => {
+            if (err) {
+              reject(err);
+            } else {
+              const hasImageColumn = rows.some(row => row.name === 'image');
+              if (!hasImageColumn) {
+                db.run("ALTER TABLE messages ADD COLUMN image TEXT", (err) => {
+                  if (err) reject(err);
+                  else resolve();
+                });
+              } else {
+                resolve();
+              }
+            }
+          });
+        }
+      });
+      // Create api_keys table
+      db.run(`
+        CREATE TABLE IF NOT EXISTS api_keys (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          key TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `, (err) => {
         if (err) reject(err);
